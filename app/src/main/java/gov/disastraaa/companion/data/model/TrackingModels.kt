@@ -2,58 +2,63 @@ package gov.disastraaa.companion.data.model
 
 import com.google.gson.annotations.SerializedName
 
+data class DeviceInfo(
+    @SerializedName("model") val model: String? = null,
+    @SerializedName("osVersion") val osVersion: String? = null,
+    @SerializedName("appVersion") val appVersion: String? = null
+)
+
 data class SessionRequest(
-    @SerializedName("deviceTimestamp") val deviceTimestamp: Long = System.currentTimeMillis()
+    @SerializedName("action") val action: String, // "START" or "STOP"
+    @SerializedName("consentGiven") val consentGiven: Boolean? = null,
+    @SerializedName("sessionId") val sessionId: String? = null,
+    @SerializedName("deviceInfo") val deviceInfo: DeviceInfo? = null
 )
 
 data class SessionResponse(
     @SerializedName("success") val success: Boolean,
     @SerializedName("sessionId") val sessionId: String? = null,
+    @SerializedName("status") val status: String? = null, // "ACTIVE" or "ENDED"
     @SerializedName("message") val message: String? = null
-)
-
-data class GpsLocation(
-    @SerializedName("latitude") val latitude: Double,
-    @SerializedName("longitude") val longitude: Double,
-    @SerializedName("altitude") val altitude: Double? = null,
-    @SerializedName("accuracy") val accuracy: Float? = null,
-    @SerializedName("speed") val speed: Float? = null,
-    @SerializedName("timestamp") val timestamp: Long = System.currentTimeMillis()
 )
 
 data class PingRequest(
-    @SerializedName("sessionId") val sessionId: String? = null,
+    @SerializedName("sessionId") val sessionId: String,
     @SerializedName("latitude") val latitude: Double,
     @SerializedName("longitude") val longitude: Double,
+    @SerializedName("accuracy") val accuracy: Double? = null,
     @SerializedName("altitude") val altitude: Double? = null,
-    @SerializedName("accuracy") val accuracy: Float? = null,
-    @SerializedName("speed") val speed: Float? = null,
-    @SerializedName("timestamp") val timestamp: Long = System.currentTimeMillis()
+    @SerializedName("speed") val speed: Double? = null,
+    @SerializedName("batteryLevel") val batteryLevel: Int? = null,
+    @SerializedName("timestamp") val timestamp: String? = null
 )
 
-data class RiskResult(
-    @SerializedName("level") val level: String? = null,
-    @SerializedName("zoneName") val zoneName: String? = null,
-    @SerializedName("isHighRisk") val isHighRisk: Boolean = false,
-    @SerializedName("message") val message: String? = null
-)
+data class RiskAssessment(
+    @SerializedName("inHazardZone") val inHazardZone: Boolean = false,
+    @SerializedName("riskLevel") val riskLevel: String = "LOW",
+    @SerializedName("hazardId") val hazardId: String? = null,
+    @SerializedName("hazardType") val hazardType: String? = null,
+    @SerializedName("title") val title: String? = null
+) {
+    val isHighRisk: Boolean
+        get() = inHazardZone || riskLevel.equals("HIGH", ignoreCase = true) || riskLevel.equals("CRITICAL", ignoreCase = true)
+}
 
 data class PingResponse(
     @SerializedName("success") val success: Boolean,
-    @SerializedName("risk") val risk: RiskResult? = null,
+    @SerializedName("riskAssessment") val riskAssessment: RiskAssessment? = null,
     @SerializedName("message") val message: String? = null
 )
 
 data class OfflineLocationRecord(
     @SerializedName("latitude") val latitude: Double,
     @SerializedName("longitude") val longitude: Double,
-    @SerializedName("altitude") val altitude: Double? = null,
-    @SerializedName("accuracy") val accuracy: Float? = null,
-    @SerializedName("speed") val speed: Float? = null,
-    @SerializedName("timestamp") val timestamp: Long
+    @SerializedName("accuracy") val accuracy: Double? = null,
+    @SerializedName("timestamp") val timestamp: String
 )
 
 data class SyncRequest(
+    @SerializedName("sessionId") val sessionId: String,
     @SerializedName("locations") val locations: List<OfflineLocationRecord>
 )
 

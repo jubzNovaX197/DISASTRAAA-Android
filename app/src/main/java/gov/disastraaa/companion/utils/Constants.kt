@@ -23,4 +23,9 @@ object Constants {
     const val LOCATION_FASTEST_INTERVAL_MS = 5000L
 
     const val DATABASE_NAME = "disastraaa_companion_db"
+
+    const val MAX_OFFLINE_QUEUE_CAPACITY = 2000
+    const val MAX_SYNC_RETRY_COUNT = 5
+    const val UNIQUE_SYNC_WORK_NAME = "disastraaa_offline_location_sync"
+    const val UNIQUE_PERIODIC_SYNC_WORK_NAME = "disastraaa_periodic_location_sync"
 }

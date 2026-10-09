@@ -57,7 +57,8 @@ class DisastraaaApplication : Application(), Configuration.Provider {
         locationRepository = LocationRepository(
             context = this,
             trackingApiService = apiClient.trackingApiService,
-            locationDao = database.locationDao()
+            locationDao = database.locationDao(),
+            tokenStorage = tokenManager
         )
 
         val fusedClient = LocationServices.getFusedLocationProviderClient(this)

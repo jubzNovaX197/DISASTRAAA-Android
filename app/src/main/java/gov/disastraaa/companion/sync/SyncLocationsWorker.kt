@@ -1,6 +1,7 @@
 package gov.disastraaa.companion.sync
 
 import android.content.Context
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -11,6 +12,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import gov.disastraaa.companion.DisastraaaApplication
+import gov.disastraaa.companion.utils.Constants
 import java.util.concurrent.TimeUnit
 
 class SyncLocationsWorker(
@@ -20,22 +22,35 @@ class SyncLocationsWorker(
 
     override suspend fun doWork(): Result {
         val app = applicationContext as DisastraaaApplication
-        val repository = app.locationRepository
 
+        // User & session isolation: do not attempt to sync if user is logged out
+        if (!app.tokenManager.isLoggedIn()) {
+            return Result.failure()
+        }
+
+        // Bounded retry policy: prevent infinite work execution loops
+        if (runAttemptCount >= Constants.MAX_SYNC_RETRY_COUNT) {
+            return Result.failure()
+        }
+
+        val repository = app.locationRepository
         val syncResult = repository.syncQueuedLocations()
 
         return if (syncResult.isSuccess) {
             Result.success()
         } else {
-            // If offline or network issue, retry when connected
-            Result.retry()
+            val exception = syncResult.exceptionOrNull()
+            if (exception is IllegalStateException) {
+                // Permanent auth or precondition failure: do not retry
+                Result.failure()
+            } else {
+                // Retryable network or 5xx server issue: back off and retry
+                Result.retry()
+            }
         }
     }
 
     companion object {
-        private const val UNIQUE_PERIODIC_WORK_NAME = "disastraaa_periodic_location_sync"
-        private const val UNIQUE_ONE_TIME_WORK_NAME = "disastraaa_immediate_location_sync"
-
         fun enqueuePeriodicSync(context: Context) {
             try {
                 val constraints = Constraints.Builder()
@@ -46,16 +61,19 @@ class SyncLocationsWorker(
                     15, TimeUnit.MINUTES
                 )
                     .setConstraints(constraints)
+                    .setBackoffCriteria(
+                        BackoffPolicy.EXPONENTIAL,
+                        15,
+                        TimeUnit.SECONDS
+                    )
                     .build()
 
                 WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                    UNIQUE_PERIODIC_WORK_NAME,
+                    Constants.UNIQUE_PERIODIC_SYNC_WORK_NAME,
                     ExistingPeriodicWorkPolicy.KEEP,
                     periodicRequest
                 )
-            } catch (e: Exception) {
-                // Gracefully log or handle constraint tracker exceptions
-            }
+            } catch (_: Exception) {}
         }
 
         fun enqueueOneTimeSync(context: Context) {
@@ -66,16 +84,27 @@ class SyncLocationsWorker(
 
                 val oneTimeRequest = OneTimeWorkRequestBuilder<SyncLocationsWorker>()
                     .setConstraints(constraints)
+                    .setBackoffCriteria(
+                        BackoffPolicy.EXPONENTIAL,
+                        15,
+                        TimeUnit.SECONDS
+                    )
                     .build()
 
                 WorkManager.getInstance(context).enqueueUniqueWork(
-                    UNIQUE_ONE_TIME_WORK_NAME,
-                    ExistingWorkPolicy.REPLACE,
+                    Constants.UNIQUE_SYNC_WORK_NAME,
+                    ExistingWorkPolicy.KEEP,
                     oneTimeRequest
                 )
-            } catch (e: Exception) {
-                // Gracefully log or handle constraint tracker exceptions
-            }
+            } catch (_: Exception) {}
+        }
+
+        fun cancelSyncWork(context: Context) {
+            try {
+                val workManager = WorkManager.getInstance(context)
+                workManager.cancelUniqueWork(Constants.UNIQUE_SYNC_WORK_NAME)
+                workManager.cancelUniqueWork(Constants.UNIQUE_PERIODIC_SYNC_WORK_NAME)
+            } catch (_: Exception) {}
         }
     }
 }

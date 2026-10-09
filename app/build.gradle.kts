@@ -11,7 +11,7 @@ android {
     }
 
     val defaultDevUrl = (project.findProperty("DISASTRAAA_BASE_URL") as? String)
-        ?: "http://10.0.2.2:3000/"
+        ?: "http://127.0.0.1:3000/"
 
     defaultConfig {
         applicationId = "gov.disastraaa.companion"
@@ -28,7 +28,7 @@ android {
     buildTypes {
         debug {
             val debugUrl = (project.findProperty("DISASTRAAA_BASE_URL") as? String)
-                ?: "http://10.0.2.2:3000/"
+                ?: "http://127.0.0.1:3000/"
             buildConfigField("String", "BASE_URL", "\"$debugUrl\"")
         }
         release {
@@ -44,6 +44,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
     buildFeatures {
         compose = true

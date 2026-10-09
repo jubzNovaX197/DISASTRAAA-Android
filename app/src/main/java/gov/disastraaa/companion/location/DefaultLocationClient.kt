@@ -26,7 +26,18 @@ class DefaultLocationClient(
                 throw LocationClient.LocationException("Location permissions are missing")
             }
 
-            val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervalMs)
+            val hasFineLocation = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+            val priority = if (hasFineLocation) {
+                Priority.PRIORITY_HIGH_ACCURACY
+            } else {
+                Priority.PRIORITY_BALANCED_POWER_ACCURACY
+            }
+
+            val request = LocationRequest.Builder(priority, intervalMs)
                 .setMinUpdateIntervalMillis(intervalMs / 2)
                 .setWaitForAccurateLocation(false)
                 .build()
