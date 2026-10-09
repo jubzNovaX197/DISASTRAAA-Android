@@ -51,16 +51,29 @@ class AuthViewModel(
     }
 
     fun login() {
+        if (_uiState.value.isLoading) {
+            // Prevent duplicate login submissions while a request is actively in-flight
+            return
+        }
+
         val currentEmail = _uiState.value.email.trim()
         val currentPassword = _uiState.value.password
 
-        if (currentEmail.isBlank() || !currentEmail.contains("@")) {
-            _uiState.update { it.copy(errorMessage = "Please enter a valid email address.") }
-            return
-        }
-        if (currentPassword.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Password cannot be empty.") }
-            return
+        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+
+        when {
+            currentEmail.isBlank() -> {
+                _uiState.update { it.copy(errorMessage = "Please enter your email address.") }
+                return
+            }
+            !emailRegex.matches(currentEmail) -> {
+                _uiState.update { it.copy(errorMessage = "Please enter a valid email address.") }
+                return
+            }
+            currentPassword.isBlank() -> {
+                _uiState.update { it.copy(errorMessage = "Password cannot be empty.") }
+                return
+            }
         }
 
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }

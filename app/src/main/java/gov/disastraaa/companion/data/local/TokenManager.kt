@@ -9,10 +9,11 @@ import androidx.security.crypto.MasterKey
 import gov.disastraaa.companion.data.model.User
 import gov.disastraaa.companion.utils.Constants
 
-class TokenManager(context: Context) {
+class TokenManager(context: Context) : TokenStorage {
 
     private val sharedPreferences: SharedPreferences = createPreferences(context)
 
+    @Suppress("DEPRECATION")
     private fun createPreferences(context: Context): SharedPreferences {
         val isEmulator = Build.HARDWARE.contains("ranchu", ignoreCase = true) ||
                 Build.HARDWARE.contains("goldfish", ignoreCase = true) ||
@@ -38,7 +39,7 @@ class TokenManager(context: Context) {
         return context.getSharedPreferences(Constants.PREFS_FILE_NAME, Context.MODE_PRIVATE)
     }
 
-    fun saveAuth(token: String, user: User?) {
+    override fun saveAuth(token: String, user: User?) {
         sharedPreferences.edit().apply {
             putString(Constants.KEY_ACCESS_TOKEN, token)
             user?.let {
@@ -51,11 +52,11 @@ class TokenManager(context: Context) {
         }
     }
 
-    fun getAccessToken(): String? {
+    override fun getAccessToken(): String? {
         return sharedPreferences.getString(Constants.KEY_ACCESS_TOKEN, null)
     }
 
-    fun getUser(): User? {
+    override fun getUser(): User? {
         val id = sharedPreferences.getString(Constants.KEY_USER_ID, null) ?: return null
         val name = sharedPreferences.getString(Constants.KEY_USER_NAME, "") ?: ""
         val email = sharedPreferences.getString(Constants.KEY_USER_EMAIL, "") ?: ""
@@ -63,11 +64,11 @@ class TokenManager(context: Context) {
         return User(id = id, name = name, email = email, role = role)
     }
 
-    fun isLoggedIn(): Boolean {
+    override fun isLoggedIn(): Boolean {
         return !getAccessToken().isNullOrBlank()
     }
 
-    fun clear() {
+    override fun clear() {
         sharedPreferences.edit().clear().apply()
     }
 }

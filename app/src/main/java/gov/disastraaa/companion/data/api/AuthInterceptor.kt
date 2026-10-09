@@ -1,21 +1,27 @@
 package gov.disastraaa.companion.data.api
 
-import gov.disastraaa.companion.data.local.TokenManager
+import gov.disastraaa.companion.data.local.TokenStorage
 import okhttp3.Interceptor
 import okhttp3.Response
 
 class AuthInterceptor(
-    private val tokenManager: TokenManager,
+    private val tokenStorage: TokenStorage,
+    private val expectedHost: String? = null,
     private val onUnauthorized: (() -> Unit)? = null
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
-        val token = tokenManager.getAccessToken()
+        val token = tokenStorage.getAccessToken()
 
         val requestBuilder = originalRequest.newBuilder()
 
-        if (!token.isNullOrBlank() && originalRequest.header("Authorization") == null) {
+        // Security check: Only attach Authorization Bearer token to requests
+        // destined for the configured DISASTRAAA backend host.
+        // Never send tokens to third-party or external hosts.
+        val isTargetHost = expectedHost.isNullOrBlank() || originalRequest.url.host.equals(expectedHost, ignoreCase = true)
+
+        if (isTargetHost && !token.isNullOrBlank() && originalRequest.header("Authorization") == null) {
             requestBuilder.addHeader("Authorization", "Bearer $token")
         }
 
@@ -24,9 +30,9 @@ class AuthInterceptor(
 
         val response = chain.proceed(requestBuilder.build())
 
-        if (response.code == 401) {
+        if (response.code == 401 && isTargetHost) {
             // Token is invalid or expired
-            tokenManager.clear()
+            tokenStorage.clear()
             onUnauthorized?.invoke()
         }
 

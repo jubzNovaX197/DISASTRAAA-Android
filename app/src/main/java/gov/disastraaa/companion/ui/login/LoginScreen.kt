@@ -165,6 +165,9 @@ fun LoginScreen(
                         keyboardType = KeyboardType.Email,
                         imeAction = ImeAction.Next
                     ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Down) }
+                    ),
                     singleLine = true,
                     enabled = !state.isLoading,
                     shape = RoundedCornerShape(12.dp),

@@ -51,7 +51,7 @@ class DisastraaaApplication : Application(), Configuration.Provider {
 
         authRepository = AuthRepository(
             authApiService = apiClient.authApiService,
-            tokenManager = tokenManager
+            tokenStorage = tokenManager
         )
 
         locationRepository = LocationRepository(

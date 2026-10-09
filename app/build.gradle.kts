@@ -10,6 +10,9 @@ android {
         version = release(37)
     }
 
+    val defaultDevUrl = (project.findProperty("DISASTRAAA_BASE_URL") as? String)
+        ?: "http://10.0.2.2:3000/"
+
     defaultConfig {
         applicationId = "gov.disastraaa.companion"
         minSdk = 26
@@ -19,11 +22,19 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
+        buildConfigField("String", "BASE_URL", "\"$defaultDevUrl\"")
     }
 
     buildTypes {
+        debug {
+            val debugUrl = (project.findProperty("DISASTRAAA_BASE_URL") as? String)
+                ?: "http://10.0.2.2:3000/"
+            buildConfigField("String", "BASE_URL", "\"$debugUrl\"")
+        }
         release {
+            val prodUrl = (project.findProperty("DISASTRAAA_PROD_URL") as? String)
+                ?: "https://disastraaa.gov/"
+            buildConfigField("String", "BASE_URL", "\"$prodUrl\"")
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")

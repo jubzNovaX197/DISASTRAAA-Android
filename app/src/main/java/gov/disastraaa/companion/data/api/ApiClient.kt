@@ -1,14 +1,21 @@
 package gov.disastraaa.companion.data.api
 
 import gov.disastraaa.companion.BuildConfig
-import gov.disastraaa.companion.data.local.TokenManager
+import gov.disastraaa.companion.data.local.TokenStorage
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-class ApiClient(private val tokenManager: TokenManager) {
+class ApiClient(
+    private val tokenStorage: TokenStorage,
+    val baseUrl: String = BuildConfig.BASE_URL,
+    onUnauthorized: (() -> Unit)? = null
+) {
+
+    private val expectedHost: String? = baseUrl.toHttpUrlOrNull()?.host
 
     // Sanitized logging interceptor that logs method, url, status code, and timing
     // without printing passwords or access tokens
@@ -16,9 +23,13 @@ class ApiClient(private val tokenManager: TokenManager) {
         level = HttpLoggingInterceptor.Level.BASIC
     }
 
-    private val authInterceptor = AuthInterceptor(tokenManager)
+    private val authInterceptor = AuthInterceptor(
+        tokenStorage = tokenStorage,
+        expectedHost = expectedHost,
+        onUnauthorized = onUnauthorized
+    )
 
-    private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
+    val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -27,8 +38,8 @@ class ApiClient(private val tokenManager: TokenManager) {
         .retryOnConnectionFailure(true)
         .build()
 
-    private val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BuildConfig.BASE_URL)
+    val retrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(baseUrl)
         .client(okHttpClient)
         .addConverterFactory(GsonConverterFactory.create())
         .build()

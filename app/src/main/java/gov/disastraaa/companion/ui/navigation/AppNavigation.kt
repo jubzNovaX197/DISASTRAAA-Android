@@ -62,7 +62,7 @@ fun AppNavigation(
                 viewModel = monitoringViewModel,
                 onLogoutClick = {
                     navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Monitoring.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
